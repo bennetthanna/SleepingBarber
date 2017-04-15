@@ -24,7 +24,7 @@ pthread_mutex_t sleep_time_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t clients_left_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t wait_time_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t successful_haircuts_lock = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t write_to_screen = PTHREAD_MUTEX_INITIALIZER;
+// pthread_mutex_t write_to_screen = PTHREAD_MUTEX_INITIALIZER;
 
 //wez gon need mutexes
 
@@ -54,18 +54,18 @@ void* barber(void* arg) {
 	struct timeval time_before, time_after;
 
 	while(1) {
-		pthread_mutex_lock(&write_to_screen);
+		// pthread_mutex_lock(&write_to_screen);
 		printf("Barber %i : Sleeping\n", barber_ID);
-		fflush(stdout);
-		pthread_mutex_unlock(&write_to_screen);
+		// fflush(stdout);
+		// pthread_mutex_unlock(&write_to_screen);
 		gettimeofday(&time_before, NULL);
 		sem_wait(&clients_waiting);
 		gettimeofday(&time_after, NULL);
 		sem_post(&chairs_available);
-		pthread_mutex_lock(&write_to_screen);
+		// pthread_mutex_lock(&write_to_screen);
 		printf("Barber %i : Cutting Hair\n", barber_ID);
-		fflush(stdout);
-		pthread_mutex_unlock(&write_to_screen);
+		// fflush(stdout);
+		// pthread_mutex_unlock(&write_to_screen);
 		usleep(haircut_time);
 		sem_post(&barbers_available);
 		pthread_mutex_lock(&sleep_time_lock);
@@ -94,10 +94,10 @@ void* client(void* arg) {
 
 	struct timeval time_before, time_after;
 
-	pthread_mutex_lock(&write_to_screen);
+	// pthread_mutex_lock(&write_to_screen);
 	printf("Client %i : Arriving\n", client_ID);
-	fflush(stdout);
-	pthread_mutex_unlock(&write_to_screen);
+	// fflush(stdout);
+	// pthread_mutex_unlock(&write_to_screen);
 	sem_getvalue(&chairs_available, &chair_sem_value);
 	if (chair_sem_value == 0) {
 		if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {
@@ -111,18 +111,18 @@ void* client(void* arg) {
 	}
 
 	gettimeofday(&time_before, NULL);
-	pthread_mutex_lock(&write_to_screen);
+	// pthread_mutex_lock(&write_to_screen);
 	printf("Client %i : Waiting\n", client_ID);
-	fflush(stdout);
-	pthread_mutex_unlock(&write_to_screen);
+	// fflush(stdout);
+	// pthread_mutex_unlock(&write_to_screen);
 	sem_wait(&chairs_available);
 	sem_post(&clients_waiting);
 	sem_wait(&barbers_available);
 	gettimeofday(&time_after, NULL);
-	pthread_mutex_lock(&write_to_screen);
+	// pthread_mutex_lock(&write_to_screen);
 	printf("Client %i : Getting Hair Cut\n", client_ID);
-	fflush(stdout);
-	pthread_mutex_unlock(&write_to_screen);
+	// fflush(stdout);
+	// pthread_mutex_unlock(&write_to_screen);
 	usleep(haircut_time);
 	pthread_mutex_lock(&successful_haircuts_lock);
 	num_successful_haircuts++;
