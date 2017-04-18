@@ -24,25 +24,6 @@ pthread_mutex_t sleep_time_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t clients_left_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t wait_time_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t successful_haircuts_lock = PTHREAD_MUTEX_INITIALIZER;
-// pthread_mutex_t write_to_screen = PTHREAD_MUTEX_INITIALIZER;
-
-//wez gon need mutexes
-
-//average time waited = total_wait_time / (num clients - num clients left)
-
-//chairs_available semaphore (initialize to num_chairs - when new client made, check if chairs available, if so, sem_wait - when barber sees them, sem_post)
-//check if chairs_availabe semaphore is 0 before you do sem_wait
-//clients_waiting semaphore (signal to sleeping barbers - barbers wait (block) until clients waiting goes above 0)
-
-//barbers available semaphore - if above zero then client gets haircut, else client waits
-//initialize to number of barbers
-
-//client come in
-//decrement chairs
-//increment clients waiting
-//barber wait on clients
-//client wait on chair
-
 
 void* barber(void* arg) {
 	int barber_ID = (int) arg;
@@ -54,37 +35,18 @@ void* barber(void* arg) {
 	struct timeval time_before, time_after;
 
 	while(1) {
-		// pthread_mutex_lock(&write_to_screen);
 		printf("Barber %i : Sleeping\n", barber_ID);
-		// fflush(stdout);
-		// pthread_mutex_unlock(&write_to_screen);
 		gettimeofday(&time_before, NULL);
 		sem_wait(&clients_waiting);
 		gettimeofday(&time_after, NULL);
 		sem_post(&chairs_available);
-		// pthread_mutex_lock(&write_to_screen);
 		printf("Barber %i : Cutting Hair\n", barber_ID);
-		// fflush(stdout);
-		// pthread_mutex_unlock(&write_to_screen);
 		usleep(haircut_time);
 		sem_post(&barbers_available);
 		pthread_mutex_lock(&sleep_time_lock);
 		barber_sleep_time += (((time_after.tv_sec - time_before.tv_sec) * 1000000) + (time_after.tv_usec - time_before.tv_usec));
 		pthread_mutex_unlock(&sleep_time_lock);
 	}
-
-	//enable thread cancel
-	//print sleeping
-	// global useconds_t sleep_time = 0 - each thread add to this - at end divide by num threads;
-	//while 1
-	//get time - begin sleep
-	//sem wait on clients waiting sem
-	//sem post chairs
-	//get time - end sleep
-	//do math for total time
-	//print cutting hair
-	//usleep(haircut_time)
-	//sem post barbers available
 
 	return NULL;
 }
@@ -94,10 +56,7 @@ void* client(void* arg) {
 
 	struct timeval time_before, time_after;
 
-	// pthread_mutex_lock(&write_to_screen);
 	printf("Client %i : Arriving\n", client_ID);
-	// fflush(stdout);
-	// pthread_mutex_unlock(&write_to_screen);
 	sem_getvalue(&chairs_available, &chair_sem_value);
 	if (chair_sem_value == 0) {
 		if (pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL) != 0) {
@@ -111,18 +70,12 @@ void* client(void* arg) {
 	}
 
 	gettimeofday(&time_before, NULL);
-	// pthread_mutex_lock(&write_to_screen);
 	printf("Client %i : Waiting\n", client_ID);
-	// fflush(stdout);
-	// pthread_mutex_unlock(&write_to_screen);
-	sem_wait(&chairs_available);
 	sem_post(&clients_waiting);
+	sem_wait(&chairs_available);
 	sem_wait(&barbers_available);
 	gettimeofday(&time_after, NULL);
-	// pthread_mutex_lock(&write_to_screen);
 	printf("Client %i : Getting Hair Cut\n", client_ID);
-	// fflush(stdout);
-	// pthread_mutex_unlock(&write_to_screen);
 	usleep(haircut_time);
 	pthread_mutex_lock(&successful_haircuts_lock);
 	num_successful_haircuts++;
@@ -131,28 +84,11 @@ void* client(void* arg) {
 	client_wait_time += (((time_after.tv_sec - time_before.tv_sec) * 1000000) + (time_after.tv_usec - time_before.tv_usec));
 	pthread_mutex_unlock(&wait_time_lock);
 
-
-
-
-	//print arriving
-	//disable thread cancel
-	//if chairs_available sem == 0 then increment number of clients who leave, enable thread cancel, leave (pthread_cancel)
-	//get time - begin waiting
-	//print waiting
-	//sem wait on chairs available
-	//sem post clients_waiting
-	//sem wait barbers available
-	//get time - done waiting
-	//print getting hair cut
-	//usleep(haircut_time)
-	//increment number of hair cuts
-
 	return NULL;
 }
 
 int main(int argc, char **argv) {
 
-	// gettimeofday(&time_before, NULL);
 	srand(time(NULL));
 
 	if (argc != 6) {
@@ -245,9 +181,7 @@ int main(int argc, char **argv) {
 	}
 
 	fprintf(stderr, "Number of successful haircuts: %i\n", num_successful_haircuts);
-	fprintf(stderr, "Average sleep time for barbers: %ld\n", barber_sleep_time/num_barbers);
+	fprintf(stderr, "Average sleep time for barbers: %f\n", (float)barber_sleep_time/(float)num_barbers);
 	fprintf(stderr, "Number of clients that left: %i\n", num_clients_left);
-	fprintf(stderr, "Average wait time for clients: %ld\n", client_wait_time/(num_clients - num_clients_left));
-	// gettimeofday(&time_after, NULL);
-	// printf("Time Elapsed: %ld\n", (time_after.tv_sec - time_before.tv_sec) + (time_after.tv_usec - time_before.tv_usec));
+	fprintf(stderr, "Average wait time for clients: %f\n", (float)client_wait_time/((float)num_clients - (float)num_clients_left));
 }
