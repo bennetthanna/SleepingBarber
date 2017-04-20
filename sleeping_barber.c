@@ -14,12 +14,12 @@ sem_t chairs_available;
 sem_t clients_waiting;
 sem_t barbers_available;
 int chair_sem_value;
-
-pthread_t *client_threads, *barber_threads;
-
-int num_successful_haircuts = 0, num_clients_left = 0;
-useconds_t barber_sleep_time = 0, client_wait_time = 0;
-
+pthread_t *client_threads;
+pthread_t *barber_threads;
+int num_successful_haircuts = 0;
+int num_clients_left = 0;
+useconds_t barber_sleep_time = 0;
+useconds_t client_wait_time = 0;
 pthread_mutex_t sleep_time_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t clients_left_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_mutex_t wait_time_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -41,6 +41,7 @@ void* barber(void* arg) {
 		gettimeofday(&time_after, NULL);
 		sem_post(&chairs_available);
 		printf("Barber %i : Cutting Hair\n", barber_ID);
+		fflush(stdout);
 		usleep(haircut_time);
 		sem_post(&barbers_available);
 		pthread_mutex_lock(&sleep_time_lock);
@@ -75,6 +76,7 @@ void* client(void* arg) {
 	sem_wait(&chairs_available);
 	sem_wait(&barbers_available);
 	gettimeofday(&time_after, NULL);
+	usleep(2);
 	printf("Client %i : Getting Hair Cut\n", client_ID);
 	usleep(haircut_time);
 	pthread_mutex_lock(&successful_haircuts_lock);
