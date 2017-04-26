@@ -90,22 +90,23 @@ void* client(void* arg) {
 		num_clients_left++;
 		// release mutex
 		pthread_mutex_unlock(&clients_left_lock);
+		printf("Client %i : Leaving\n", client_ID);
 		// cancel the thread
-		pthread_cancel(client_threads[client_ID]);
+		if (pthread_cancel(client_threads[client_ID]) != 0) {
+			perror("Could not cancel thread\n");
+		}
 	}
 	// get start time for client's wait time
 	gettimeofday(&time_before, NULL);
+	// decrement the number of chairs available to signal to arriving clients
+	sem_wait(&chairs_available);
 	printf("Client %i : Waiting\n", client_ID);
 	// increment clients waiting semaphore to signal to barber
 	sem_post(&clients_waiting);
-	// decrement the number of chairs available to signal to arriving clients
-	sem_wait(&chairs_available);
 	// wait for barber to become available
 	sem_wait(&barbers_available);
 	// once sem_wait stops blocking, get end of wait time
 	gettimeofday(&time_after, NULL);
-	// sleep for 1 microsecond to ensure barber executes first
-	usleep(1);
 	printf("Client %i : Getting Hair Cut\n", client_ID);
 	// sleep for haircut time
 	usleep(haircut_time);
@@ -228,6 +229,7 @@ int main(int argc, char **argv) {
 		pthread_cancel(barber_threads[i]);
 	}
 
+	usleep(2);
 	// print out statistics
 	fprintf(stderr, "Number of successful haircuts: %i\n", num_successful_haircuts);
 	fprintf(stderr, "Average sleep time for barbers: %f\n", (float)barber_sleep_time/(float)num_barbers);
